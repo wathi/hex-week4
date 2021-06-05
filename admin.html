@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Style CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- axios -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+  <!-- Vue3 -->
+  <script src="https://unpkg.com/vue@next"></script>
+
+  <title>Online Bus Tour</title>
+</head>
+<body>
+  <main>
+    <div id="admin" class="container">    
+      <div id="backend">
+        <h3 class="text-center">後台管理</h3>
+        <button id="add-product" class="mb-2" type="button" @click="showProductModal(true)">新增</button>
+        <product-modal :temp-product="tempProduct" :product-modal-show="productModalShow" :is-new="isNew" :err-msg="errMsg" @add-product="addProduct" @edit-product="editProduct" @hide-product-modal="hideProductModal"></product-modal>
+
+        <div id="admin-product" class="row align-items-start" >
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">名稱</th>
+                <th scope="col">說明</th>
+                <th scope="col">圖片</th>
+                <th scope="col">原價</th>
+                <th scope="col">現價</th>
+                <th scope="col">啟用</th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="product in products" :key="product.id">
+                <tr>
+                  <td>{{ product.title }}</td>
+                  <td>{{ product.description }}</td>
+                  <td><img class="img-sm" :src="product.imageUrl" alt=""></td>
+                  <td>{{ product.origin_price }}{{ currency }}</td>   
+                  <td>{{ product.price }}{{ currency }}</td>
+                  <td v-if="product.is_enable">啟用</td>
+                  <td v-else>未啟用</td>
+                  <td><button value="product.id" class="btn btn-secondary" @click="getEditProduct(false, product)">修改</button></td>     
+                  <td class="text-center"><button value="product.id" class="btn btn-danger" @click="deleteProduct(product.id)">刪除</button></td>     
+                </tr>
+              </template> 
+            </tbody>
+          </table>
+        </div>
+
+        <pagination :page="pagination" @get-product-page="getProductAdmin" @previous-page="getProductAdmin" @next-page="getProductAdmin"></pagination>
+
+
+    </div>    
+  </main>
+
+  <!-- Product Modal-->
+  <script type="text/x-template" id="productModal">
+    <div id="Modal" :class="{'visually-hidden': !productModalShow}">
+      <h3 class="text-center mb-2 " v-if="isNew">新增產品</h3>
+      <h3 class="text-center mb-2 " v-else>修改產品內容</h3>
+      <div class="alert alert-danger" v-for="msg in errMsg" :key="msg">{{msg}}</div>
+      <form>
+        <div class="row">
+          <div class="col-3">
+            <div class="mb-2">
+              <label for="imageUrl" class="form-label">圖片地址</label>
+              <input id="imageUrl"  class="form-control" name="imageUrl" type="url" v-model="tempProduct.imageUrl">  
+            </div>  
+            <img class="img-thumbnail" :src="tempProduct.imageUrl" alt="">
+          </div>
+          <div class="col-9">
+            <div class="row mb-2">
+              <div class="col-3">
+                <label for="category" class="form-label">分類</label>
+                <input id="category" class="form-control" name="category" type="text" v-model="tempProduct.category" required>    
+              </div>
+              <div class="col-9">
+                <label for="title" class="form-label">標題</label>
+                <input id="title" class="form-control" name="title" type="text" v-model="tempProduct.title" required>
+                </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col">
+                <label for="description" class="form-label">說明</label>
+                <input id="description"  class="form-control" name="description" type="text" v-model="tempProduct.description" required>    
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col">
+                <label for="content" class="form-label">內容</label>
+                <input id="content"  class="form-control" name="content" type="textarea" v-model="tempProduct.content" required>    
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-3">
+                <label for="origin_price" class="form-label">原價</label>
+                <input id="origin_price"  class="form-control" name="origin_price" type="number" min="0" v-model.number="tempProduct.origin_price" required>
+              </div>  
+              <div class="col-3">
+                <label for="price" class="form-label">現價</label>
+                <input id="price"  class="form-control" name="price" type="number" min="0" v-model.number="tempProduct.price">  
+              </div>
+              <div class="col-3">
+                <label for="unit" class="form-label">單位</label>
+                <input id="unit"  class="form-control" name="unit" type="text" v-model="tempProduct.unit">
+              </div>
+              <div class="col-3">
+                <label for="is_enable" class="mx-2">是否啟用</label>
+                <input id="is_enable" type="checkbox" v-model="tempProduct.is_enabled">
+              </div> 
+            </div>                  
+          </div>
+        </div>      
+
+        <button id="btn-add" class="btn btn-primary mx-2" type="button" @click="$emit('add-product')" v-if="isNew">新增產品</button>
+        <button id="btn-edit" class="btn btn-primary mx-2" type="button" @click="$emit('editProduct')" v-else>修改產品</button>
+        <button id="btn-return" class="btn btn-secondary mx-2" type="button" @click="$emit('hideProductModal')">返回</button>
+      </form>
+    </div>  
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="admin.js"></script>
+</body>
+</html>

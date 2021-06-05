@@ -1,0 +1,22 @@
+/* Decoration */
+.text-decoration-none {
+  text-decoration: none;
+}
+
+.list-style-none {
+  list-style: none;
+}
+
+.img-sm {
+  height: auto;
+  width: 100px;
+}
+
+.img-md {
+  height: auto;
+  width: 300px;
+}
+
+.text-center {
+  text-align: center;
+}
